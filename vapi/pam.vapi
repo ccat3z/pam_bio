@@ -3,16 +3,52 @@ namespace Pam {
     [CCode(cname = "pam_handle_t", cprefix = "pam_")]
     [Compact]
     public class PamHandler {
+        public void *get_item(ItemType item_type, out void *item);
     }
 
-    [CCode (cname = "int", cprefix = "PAM_") ]
+    [CCode(cname = "struct pam_message")]
+    public struct PamMessage {
+        int msg_style;
+        char *msg;
+    }
+
+    [CCode(cname = "struct pam_response")]
+    public struct PamResponse {
+        char *resp;
+        int resp_retcode;
+    }
+
+    [CCode(cname = "struct pam_conv")]
+    public struct PamConv {
+        void *conv;
+        void *appdata_ptr;
+    }
+
+    [CCode(cname = "int", cprefix = "PAM_") ]
+    public enum ItemType {
+        SERVICE,
+        USER,
+        USER_PROMPT,
+        TTY,
+        RUSER,
+        RHOST,
+        AUTHTOK,
+        OLDAUTHTOK,
+        CONV,
+        FAIL_DELAY,
+        XDISPLAY,
+        XAUTHDATA,
+        AUTHTOK_TYPE
+    }
+
+    [CCode(cname = "int", cprefix = "PAM_") ]
     [Flags]
     public enum AuthenticateFlags {
         SILENT,
         DISALLOW_NULL_AUTHTOK
     }
 
-    [CCode (cname = "int", cprefix = "PAM_") ]
+    [CCode(cname = "int", cprefix = "PAM_") ]
     public enum AuthenticateResult {
         AUTH_ERR,
         CRED_INSUFFICIENT,
@@ -20,5 +56,13 @@ namespace Pam {
         SUCCESS,
         USER_UNKNOWN,
         MAXTRIES
+    }
+
+    [CCode(cname = "int", cprefix = "PAM_")]
+    public enum MessageStyle {
+        PROMPT_ECHO_OFF,
+        PROMPT_ECHO_ON,
+        ERROR_MSG,
+        TEXT_INFO
     }
 }
