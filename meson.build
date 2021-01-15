@@ -13,6 +13,7 @@ cc = meson.get_compiler('c')
 
 glib_dep = dependency('glib-2.0')
 gobject_dep = dependency('gobject-2.0')
+gio_dep = dependency('gio-2.0')
 pam_dep = cc.find_library('pam', has_headers: 'security/pam_modules.h')
 
 auth = static_library(
@@ -22,6 +23,7 @@ auth = static_library(
     dependencies: [
         glib_dep,
         gobject_dep,
+        gio_dep,
         pam_dep,
         valac.find_library('pam', dirs: vapi_dir)
     ]
