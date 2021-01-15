@@ -1,6 +1,7 @@
 [CCode(cheader_filename = "security/pam_modules.h")]
 namespace Pam {
     [CCode(cname = "pam_handle_t", cprefix = "pam_")]
+    [Compact]
     public class PamHandler {
     }
 
