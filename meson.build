@@ -16,7 +16,7 @@ gobject_dep = dependency('gobject-2.0')
 pam_dep = cc.find_library('pam', has_headers: 'security/pam_modules.h')
 
 auth = static_library(
-    'bioauth',
+    'auth',
     name_prefix: '',
     sources: ['auth.vala'],
     dependencies: [
