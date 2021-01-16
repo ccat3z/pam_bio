@@ -25,7 +25,8 @@ auth = static_library(
         gobject_dep,
         gio_dep,
         pam_dep,
-        valac.find_library('pam', dirs: vapi_dir)
+        valac.find_library('pam', dirs: vapi_dir),
+        valac.find_library('posix')
     ]
 )
 auth_dep = declare_dependency(link_with: auth)
