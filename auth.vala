@@ -61,16 +61,19 @@ private async AuthenticateResult do_authenticate_async(PamHandler pamh, Authenti
         authentication.auth.begin(cancellable, (_, async_res) => {
             res_mutex.lock();
 
-            // ignore this result if authenticate already successed
-            if (res != AuthenticateResult.SUCCESS) {
-                try {
+            try {
+                AuthenticateResult auth_res = authentication.auth.end(async_res);
+                pamh.syslog_debug(@"$(authentication.name) result: $auth_res");
+
+                // ignore this result if authenticate already successed
+                if (res != AuthenticateResult.SUCCESS) {
                     // cancel other auth task if success
-                    if ((res = authentication.auth.end(async_res)) == AuthenticateResult.SUCCESS) {
+                    if ((res = auth_res) == AuthenticateResult.SUCCESS) {
                         Idle.add(() => { cancellable.cancel(); return Source.REMOVE; });
                     }
-                } catch (Error e) {
-                    pamh.syslog_err(e.message);
                 }
+            } catch (Error e) {
+                pamh.syslog_err(@"$(authentication.name) failed: $(e.message)");
             }
 
             do_authenticate_async.callback();
