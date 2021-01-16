@@ -16,6 +16,15 @@ gobject_dep = dependency('gobject-2.0')
 gio_dep = dependency('gio-2.0')
 pam_dep = cc.find_library('pam', has_headers: 'security/pam_modules.h')
 
+enable_fprint = get_option('enable_fprint')
+howdy_bin_path = get_option('howdy_compare')
+enable_howdy = howdy_bin_path != ''
+
+conf = configuration_data()
+conf.set_quoted('HOWDY_COMPARE', howdy_bin_path)
+conf.set('ENABLE_FPRINT', enable_fprint)
+configure_file(output: 'config.h', configuration: conf)
+
 auth = static_library(
     'auth',
     name_prefix: '',
@@ -26,7 +35,12 @@ auth = static_library(
         gio_dep,
         pam_dep,
         valac.find_library('pam', dirs: vapi_dir),
+        valac.find_library('config', dirs: vapi_dir),
         valac.find_library('posix')
+    ],
+    vala_args: [
+        enable_fprint ? ['-D', 'ENABLE_FPRINT'] : [],
+        enable_howdy ? ['-D', 'ENABLE_HOWDY'] : [],
     ]
 )
 auth_dep = declare_dependency(link_with: auth)
