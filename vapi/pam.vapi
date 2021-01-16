@@ -66,7 +66,26 @@ namespace Pam {
         AUTHINFO_UNAVAIL,
         SUCCESS,
         USER_UNKNOWN,
-        MAXTRIES
+        MAXTRIES;
+
+        public string to_string() {
+            switch (this) {
+            case AUTH_ERR:
+                return "err";
+            case CRED_INSUFFICIENT:
+                return "cred insufficient";
+            case AUTHINFO_UNAVAIL:
+                return "authinfo unavail";
+            case SUCCESS:
+                return "success";
+            case USER_UNKNOWN:
+                return "user unknown";
+            case MAXTRIES:
+                return "max tries";
+            default:
+                GLib.assert_not_reached();
+            }
+        }
     }
 
     [CCode(cname = "int", cprefix = "PAM_")]
