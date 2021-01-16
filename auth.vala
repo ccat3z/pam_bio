@@ -32,6 +32,7 @@ public class AuthenticateContext : GLib.Object {
 
 public interface Authentication : GLib.Object {
     public abstract async AuthenticateResult auth(Cancellable? cancellable = null) throws Error;
+    public abstract string name { owned get; }
 }
 
 private async AuthenticateResult do_authenticate_async(PamHandler pamh, AuthenticateFlags flags, string[] argv) {
