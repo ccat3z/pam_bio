@@ -42,7 +42,7 @@ private async AuthenticateResult do_authenticate_async(PamHandler pamh, Authenti
     ctx.pamh = pamh;
 
     Authentication[] authentications = {
-        //  new net.reactivated.Fprint.FprintAuthentication(ctx),
+        new net.reactivated.Fprint.FprintAuthentication(ctx),
     };
 
     var cancellable = new Cancellable();
