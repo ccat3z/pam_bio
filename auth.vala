@@ -43,6 +43,7 @@ private async AuthenticateResult do_authenticate_async(PamHandler pamh, Authenti
 
     Authentication[] authentications = {
         new net.reactivated.Fprint.FprintAuthentication(ctx),
+        new com.github.boltgolt.HowdyAuthencation(ctx),
     };
 
     var cancellable = new Cancellable();

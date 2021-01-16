@@ -19,7 +19,7 @@ pam_dep = cc.find_library('pam', has_headers: 'security/pam_modules.h')
 auth = static_library(
     'auth',
     name_prefix: '',
-    sources: ['auth.vala', 'utils.vala', 'pam.vala', 'fprint.vala'],
+    sources: ['auth.vala', 'utils.vala', 'pam.vala', 'fprint.vala', 'howdy.vala'],
     dependencies: [
         glib_dep,
         gobject_dep,
