@@ -7,6 +7,7 @@ namespace Pam {
         public int get_user(out unowned string user, out string prompt);	 
         public int syslog(SysLogPriorities priority, string fmt, ...);
         public int prompt(MessageStyle style, out string response, string fmt, ...);
+        public int get_authtok (GetAuthTokItem item, out string *authtok, string? prompt);
     }
 
     [CCode(cname = "struct pam_message")]
@@ -98,5 +99,11 @@ namespace Pam {
         NOTICE,
         INFO,
         DEBUG
+    }
+
+    [CCode(cname = "int", cprefix = "PAM_")]
+    public enum GetAuthTokItem {
+        AUTHTOK,
+        OLDAUTHTOK
     }
 }
