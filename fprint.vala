@@ -16,7 +16,7 @@ namespace net {
 					this.ctx = ctx;
 				}
 
-				public string name { owned get { return "fprintd"; } }
+				public string name { owned get { return "fprint"; } }
 
 				private async Fprint.Device findDevice(Cancellable? cancellable) throws FprintError, IOError, DBusError {
 					if (cancellable.is_cancelled())
