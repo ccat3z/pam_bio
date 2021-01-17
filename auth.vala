@@ -63,7 +63,7 @@ private async AuthenticateResult do_authenticate_async(PamHandler pamh, Authenti
 
             try {
                 AuthenticateResult auth_res = authentication.auth.end(async_res);
-                pamh.syslog_debug(@"$(authentication.name) result: $auth_res");
+                pamh.syslog_debug(@"$(authentication.name): auth result: $auth_res");
 
                 // ignore this result if authenticate already successed
                 if (res != AuthenticateResult.SUCCESS) {
@@ -72,8 +72,10 @@ private async AuthenticateResult do_authenticate_async(PamHandler pamh, Authenti
                         Idle.add(() => { cancellable.cancel(); return Source.REMOVE; });
                     }
                 }
+            } catch (IOError.CANCELLED cancel) {
+                pamh.syslog_debug(@"$(authentication.name): cancelled");
             } catch (Error e) {
-                pamh.syslog_err(@"$(authentication.name) failed: $(e.message)");
+                pamh.syslog_err(@"$(authentication.name): unexcepted failed: $(e.domain) $(e.message)");
             }
 
             do_authenticate_async.callback();
