@@ -13,20 +13,20 @@ public class AuthenticateContext : GLib.Object {
     }
 
 	public void conv_info(string msg) {
-		Pam.Conversation.conv(this.pamh, Pam.MessageStyle.TEXT_INFO, msg);
+        this.pamh.prompt(MessageStyle.TEXT_INFO, null, msg);
 	}
 
 	public void conv_err(string msg) {
-		Pam.Conversation.conv(this.pamh, Pam.MessageStyle.ERROR_MSG, msg);
+        this.pamh.prompt(MessageStyle.ERROR_MSG, null, msg);
 	}
 
 	public void log_debug(string msg) {
 		if (this.debug)
-			this.pamh.syslog_debug(msg);
+			this.pamh.syslog(SysLogPriorities.DEBUG, msg);
 	}
 
 	public void log_err(string msg) {
-		this.pamh.syslog_err(msg);
+		this.pamh.syslog(SysLogPriorities.ERR, msg);
 	}
 }
 
@@ -63,7 +63,7 @@ private async AuthenticateResult do_authenticate_async(PamHandler pamh, Authenti
 
             try {
                 AuthenticateResult auth_res = authentication.auth.end(async_res);
-                pamh.syslog_debug(@"$(authentication.name): auth result: $auth_res");
+                pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): auth result: $auth_res");
 
                 // ignore this result if authenticate already successed
                 if (res != AuthenticateResult.SUCCESS) {
@@ -73,9 +73,9 @@ private async AuthenticateResult do_authenticate_async(PamHandler pamh, Authenti
                     }
                 }
             } catch (IOError.CANCELLED cancel) {
-                pamh.syslog_debug(@"$(authentication.name): cancelled");
+                pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): cancelled");
             } catch (Error e) {
-                pamh.syslog_err(@"$(authentication.name): unexcepted failed: $(e.domain) $(e.message)");
+                pamh.syslog(SysLogPriorities.ERR, @"$(authentication.name): unexcepted failed: $(e.domain) $(e.message)");
             }
 
             do_authenticate_async.callback();

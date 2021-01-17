@@ -1,4 +1,4 @@
-[CCode(cheader_filename = "security/pam_modules.h,sys/syslog.h")]
+[CCode(cheader_filename = "security/pam_modules.h,security/pam_ext.h,sys/syslog.h")]
 namespace Pam {
     [CCode(cname = "pam_handle_t", cprefix = "pam_")]
     [Compact]
@@ -6,15 +6,7 @@ namespace Pam {
         public void *get_item(ItemType item_type, out void *item);
         public int get_user(out unowned string user, out string prompt);	 
         public int syslog(SysLogPriorities priority, string fmt, ...);
-        public int syslog_debug(string msg) {
-            return this.syslog(SysLogPriorities.DEBUG, msg);
-        }
-        public int syslog_info(string msg) {
-            return this.syslog(SysLogPriorities.INFO, msg);
-        }
-        public int syslog_err(string msg) {
-            return this.syslog(SysLogPriorities.ERR, msg);
-        }
+        public int prompt(MessageStyle style, out string response, string fmt, ...);
     }
 
     [CCode(cname = "struct pam_message")]
