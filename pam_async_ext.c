@@ -1,6 +1,8 @@
 #include "pam_async_ext.h"
 #include <pthread.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <syslog.h>
 
 typedef struct {
     pam_handle_t *pamh;
@@ -20,8 +22,11 @@ static void *pam_get_authtok_thread(void *d) {
     pthread_exit(NULL);
 }
 
-void pam_get_authtok_cancel(unsigned long t) {
+void pam_get_authtok_cancel(pam_handle_t *pamh, unsigned long t) {
+    // pam_syslog(pamh, LOG_DEBUG, "cancel get authtok thread: %ld", t);
     pthread_cancel(t);
+    pthread_join(t, NULL);
+    // FIXME: free data
 }
 
 unsigned long pam_get_authtok_async(pam_handle_t *pamh, int item, const char *prompt, pam_get_authtok_cb callback, const void *callback_data) {
@@ -35,5 +40,6 @@ unsigned long pam_get_authtok_async(pam_handle_t *pamh, int item, const char *pr
     data->callback_data = callback_data;
     
     pthread_create(&thread, NULL, pam_get_authtok_thread, data);
+    // pam_syslog(pamh, LOG_DEBUG, "start get authtok thread: %ld", thread);
     return thread;
 }
