@@ -82,13 +82,20 @@ namespace PamBio {
 
                 try {
                     AuthenticateResult auth_res = authentication.auth.end(async_res);
-                    pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): auth result: $auth_res");
+                    if (ctx.debug)
+                        pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): auth result: $auth_res");
 
                     // ignore this result if authenticate already successed
                     if (res != AuthenticateResult.SUCCESS) {
-                        // cancel other auth task if success or have insufficient cred
                         switch (res = auth_res) {
+                        // Prompt success message and cancel other auth task if success
                         case AuthenticateResult.SUCCESS:
+                            ctx.pamh.prompt(MessageStyle.TEXT_INFO, null, "Success");
+                            Idle.add(() => { cancellable.cancel(); return Source.REMOVE; });
+                            break;
+                        // Cancel other auth task if cred insufficient
+                        // e.g. The user entered a password, but we are not sure
+                        //      the password is correct.
                         case AuthenticateResult.CRED_INSUFFICIENT:
                             Idle.add(() => { cancellable.cancel(); return Source.REMOVE; });
                             break;
