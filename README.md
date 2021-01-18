@@ -8,6 +8,14 @@ PAM module that run howdy, fprint and retrieve password in parallel.
 - [ ] disable_{fprint,howdy} by service name
 - [ ] Retrieve username before starting authn task
 
+# Build
+
+``` sh
+meson setup .build
+meson compile -C .build
+meson install -C .build  # install pam_bio.so to /lib/security
+```
+
 # Usage
 
 ```
