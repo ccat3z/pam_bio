@@ -1,6 +1,6 @@
 using Pam;
 
-namespace com.github.boltgolt {
+namespace PamBio.Howdy {
     class HowdyAuthencation : Object, Authentication {
         private AuthenticateContext ctx;
 
