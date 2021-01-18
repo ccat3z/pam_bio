@@ -14,7 +14,7 @@ namespace Pam {
         // pam_async_ext
         public ulong get_authtok_async(GetAuthTokItem item, string? prompt, GetAuthTokCallbackFunc callback);
         public void get_authtok_cancel(ulong id);
-        public delegate void GetAuthTokCallbackFunc(GetAuthTokResult result, string authtok);
+        public delegate void GetAuthTokCallbackFunc(GetAuthTokResult result, string? authtok);
     }
 
     [CCode(cname = "struct pam_message")]
