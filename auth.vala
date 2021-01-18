@@ -3,7 +3,7 @@ using Pam;
 namespace PamBio {
     class AuthenticateContext : GLib.Object {
         public unowned PamHandler pamh;
-        public bool debug = true;
+        public bool debug = false;
         public string username {
             get {
                 weak string u;
@@ -28,6 +28,23 @@ namespace PamBio {
         public void log_err(string msg) {
             this.pamh.syslog(SysLogPriorities.ERR, msg);
         }
+
+        public void merge_argv(string[] argv) {
+            foreach (var arg in argv) {
+                string[] kv = arg.split("=", 2);
+                string key = kv[0];
+                string? value = kv.length > 1 ? kv[1] : null;
+
+                switch (key) {
+                case "debug":
+                    debug = true;
+                    break;
+                default:
+                    pamh.syslog(SysLogPriorities.WARNING, @"unknown arg: $key");
+                    break;
+                }
+            }
+        }
     }
 
     interface Authentication : GLib.Object {
@@ -41,6 +58,7 @@ namespace PamBio {
 
         var ctx = new AuthenticateContext();
         ctx.pamh = pamh;
+        ctx.merge_argv(argv);
 
         Authentication[] authentications = {
             #if ENABLE_FPRINT
@@ -79,7 +97,8 @@ namespace PamBio {
                         }
                     }
                 } catch (IOError.CANCELLED cancel) {
-                    pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): cancelled");
+                    if (ctx.debug)
+                        pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): cancelled");
                 } catch (Error e) {
                     pamh.syslog(SysLogPriorities.ERR, @"$(authentication.name): unexcepted failed: $(e.domain) $(e.message)");
                 }
