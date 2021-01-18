@@ -49,6 +49,7 @@ private async AuthenticateResult do_authenticate_async(PamHandler pamh, Authenti
 #if ENABLE_HOWDY
         new com.github.boltgolt.HowdyAuthencation(ctx),
 #endif
+        new PasswordAuthencation(ctx)
     };
 
     var cancellable = new Cancellable();
@@ -67,9 +68,14 @@ private async AuthenticateResult do_authenticate_async(PamHandler pamh, Authenti
 
                 // ignore this result if authenticate already successed
                 if (res != AuthenticateResult.SUCCESS) {
-                    // cancel other auth task if success
-                    if ((res = auth_res) == AuthenticateResult.SUCCESS) {
+                    // cancel other auth task if success or have insufficient cred
+                    switch (res = auth_res) {
+                    case AuthenticateResult.SUCCESS:
+                    case AuthenticateResult.CRED_INSUFFICIENT:
                         Idle.add(() => { cancellable.cancel(); return Source.REMOVE; });
+                        break;
+                    default:
+                        break;
                     }
                 }
             } catch (IOError.CANCELLED cancel) {
