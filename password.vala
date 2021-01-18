@@ -32,7 +32,7 @@ namespace PamBio {
             cb_mutex.unlock();
 
             if (tok != null) {
-                ctx.log_debug(@"pass: got $tok");
+                ctx.log_debug(@"pass: got authtok");
                 return AuthenticateResult.CRED_INSUFFICIENT;
             } else {
                 if (!cancellable.is_cancelled())
