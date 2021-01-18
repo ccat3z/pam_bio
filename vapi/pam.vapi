@@ -1,4 +1,4 @@
-[CCode(cheader_filename = "security/pam_modules.h,security/pam_ext.h,sys/syslog.h")]
+[CCode(cheader_filename = "security/pam_modules.h,security/pam_ext.h,pam_async_ext.h,sys/syslog.h")]
 namespace Pam {
     [CCode(cname = "pam_handle_t", cprefix = "pam_")]
     [Compact]
@@ -6,8 +6,15 @@ namespace Pam {
         public void *get_item(ItemType item_type, out void *item);
         public int get_user(out unowned string user, out string prompt);	 
         public int syslog(SysLogPriorities priority, string fmt, ...);
+
+        // pam_ext
         public int prompt(MessageStyle style, out string response, string fmt, ...);
-        public int get_authtok (GetAuthTokItem item, out string *authtok, string? prompt);
+        public GetAuthTokResult get_authtok(GetAuthTokItem item, out string authtok, string? prompt);
+
+        // pam_async_ext
+        public ulong get_authtok_async(GetAuthTokItem item, string? prompt, GetAuthTokCallbackFunc callback);
+        public void get_authtok_cancel(ulong id);
+        public delegate void GetAuthTokCallbackFunc(GetAuthTokResult result, string authtok);
     }
 
     [CCode(cname = "struct pam_message")]
@@ -105,5 +112,14 @@ namespace Pam {
     public enum GetAuthTokItem {
         AUTHTOK,
         OLDAUTHTOK
+    }
+
+    [CCode(cname = "int", cprefix = "PAM_")]
+    public enum GetAuthTokResult {
+       AUTH_ERR,
+       AUTHTOK_ERR,
+       SUCCESS,
+       SYSTEM_ERR,
+       TRY_AGAIN
     }
 }

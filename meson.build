@@ -48,7 +48,7 @@ auth_dep = declare_dependency(link_with: auth)
 pam_bio = shared_module(
     'pam_bio',
     name_prefix: '',
-    sources: ['pam_bio.c'],
+    sources: ['pam_bio.c', 'pam_async_ext.c'],
     dependencies: [
         pam_dep,
         glib_dep,
