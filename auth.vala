@@ -1,9 +1,15 @@
 using Pam;
+using Gee;
 
 namespace PamBio {
     class AuthenticateContext : GLib.Object {
         public unowned PamHandler pamh;
         public bool debug = false;
+        public bool enable_ssh { get; private set; default = false; }
+        public bool enable_closed_lid { get; private set; default = false; }
+        public bool enable_fprint { get; private set; default = true; }
+        public bool enable_howdy { get; private set;  default = true; }
+
         public string username {
             get {
                 weak string u;
@@ -30,6 +36,7 @@ namespace PamBio {
         }
 
         public void merge_argv(string[] argv) {
+            // parser argv
             foreach (var arg in argv) {
                 string[] kv = arg.split("=", 2);
                 string key = kv[0];
@@ -39,9 +46,46 @@ namespace PamBio {
                 case "debug":
                     debug = true;
                     break;
+                case "enable_ssh":
+                    enable_ssh = true;
+                    break;
+                case "enable_closed_lid":
+                    enable_closed_lid = true;
+                    break;
+                case "disable_howdy":
+                    enable_howdy = false;
+                    break;
+                case "disable_fprint":
+                    enable_fprint = false;
+                    break;
                 default:
                     pamh.syslog(SysLogPriorities.WARNING, @"unknown arg: $key");
                     break;
+                }
+            }
+
+            // options side effect
+            var envp = Environ.get();
+            if (!enable_ssh) {
+                if (
+                    Environ.get_variable(envp, "SSH_CONNECTION") != null ||
+                    Environ.get_variable(envp, "SSH_CLIENT") != null ||
+                    Environ.get_variable(envp, "SSHD_OPTS") != null
+                ) {
+                    enable_fprint = false;
+                    enable_howdy = false;
+                }
+            }
+
+            if (!enable_closed_lid) {
+                var g = Posix.Glob();
+                g.glob("/proc/acpi/button/lid/*/state");
+                foreach (var path in g.pathv) {
+                    if (path.contains("closed")) {
+                        enable_fprint = false;
+                        enable_howdy = false;
+                        break;
+                    }
                 }
             }
         }
@@ -60,15 +104,19 @@ namespace PamBio {
         ctx.pamh = pamh;
         ctx.merge_argv(argv);
 
-        Authentication[] authentications = {
-            #if ENABLE_FPRINT
-            new Fprint.FprintAuthentication(ctx),
-            #endif
-            #if ENABLE_HOWDY
-            new Howdy.HowdyAuthencation(ctx),
-            #endif
-            new PasswordAuthencation(ctx)
-        };
+        var authentications = new ArrayList<Authentication>();
+        authentications.add(new PasswordAuthencation(ctx));
+
+        #if ENABLE_FPRINT
+        if (ctx.enable_fprint) {
+            authentications.add(new Fprint.FprintAuthentication(ctx));
+        }
+        #endif
+        #if ENABLE_HOWDY
+        if (ctx.enable_howdy) {
+            authentications.add(new Howdy.HowdyAuthencation(ctx));
+        }
+        #endif
 
         var cancellable = new Cancellable();
         Unix.signal_add(Posix.Signal.INT, () => {
@@ -77,6 +125,9 @@ namespace PamBio {
         });
 
         foreach (var authentication in authentications) {
+            if (ctx.debug)
+                pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): start");
+
             authentication.auth.begin(cancellable, (_, async_res) => {
                 res_mutex.lock();
 
@@ -116,7 +167,7 @@ namespace PamBio {
         }
 
         // wait all auth task
-        for (var i = 0; i < authentications.length; i++) {
+        for (var i = 0; i < authentications.size; i++) {
             yield;
         }
 

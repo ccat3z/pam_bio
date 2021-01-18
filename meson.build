@@ -14,6 +14,7 @@ cc = meson.get_compiler('c')
 glib_dep = dependency('glib-2.0')
 gobject_dep = dependency('gobject-2.0')
 gio_dep = dependency('gio-2.0')
+gee_dep = dependency('gee-0.8')
 pam_dep = cc.find_library('pam', has_headers: 'security/pam_modules.h')
 
 enable_fprint = get_option('enable_fprint')
@@ -34,6 +35,7 @@ auth = static_library(
         gobject_dep,
         gio_dep,
         pam_dep,
+        gee_dep,
         valac.find_library('pam', dirs: vapi_dir),
         valac.find_library('config', dirs: vapi_dir),
         valac.find_library('posix')
