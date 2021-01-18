@@ -119,10 +119,22 @@ namespace PamBio {
         #endif
 
         var cancellable = new Cancellable();
+
         Unix.signal_add(Posix.Signal.INT, () => {
-            cancellable.cancel();
-            return Source.REMOVE;
+           cancellable.cancel();
+           return Source.REMOVE;
         });
+
+        // TODO: may cause gnome shell freeze
+        // Handle SIGTERM may cause gnome shell (polkit)
+        // to freeze for a few seconds.
+        // I have not idea on what cause this issue.
+        // Since cleanup seems not necessay, I commented out the handler.
+        //
+        // Unix.signal_add(Posix.Signal.TERM, () => {
+        //     cancellable.cancel();
+        //     return Source.REMOVE;
+        // });
 
         foreach (var authentication in authentications) {
             if (ctx.debug)
