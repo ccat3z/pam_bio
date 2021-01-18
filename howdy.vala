@@ -19,7 +19,8 @@ namespace PamBio.Howdy {
         }
 
         public async AuthenticateResult auth(Cancellable? cancellable = null) throws Error {
-            var proc = new Subprocess(SubprocessFlags.STDERR_PIPE, "python", Build.HOWDY_COMPARE, ctx.username);
+            var proc = new Subprocess(SubprocessFlags.STDERR_PIPE | SubprocessFlags.STDOUT_PIPE, "python", Build.HOWDY_COMPARE, ctx.username);
+            redirect_input_stream.begin(proc.get_stdout_pipe());
             redirect_input_stream.begin(proc.get_stderr_pipe());
             
             ulong cancel_sig = 0;
