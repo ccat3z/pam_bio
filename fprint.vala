@@ -42,7 +42,7 @@ namespace PamBio.Fprint {
 			return targetDevice;
 		}
 
-		private async bool verify(Device device, Cancellable? cancellable) throws Error {
+		private async bool verify(Device device, Cancellable? cancellable) throws IOError, DBusError {
 			if (cancellable.is_cancelled())
 				throw new IOError.CANCELLED("cancelled");
 
@@ -81,9 +81,6 @@ namespace PamBio.Fprint {
 			device.disconnect(verify_status_sig);
 			cancellable.disconnect(cancel_sig);
 			device.verify_stop();
-
-			if (cancellable.is_cancelled())
-				throw new IOError.CANCELLED("cancelled");
 
 			return verify_res == "verify-match";
 		}
