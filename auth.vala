@@ -3,12 +3,20 @@ using Gee;
 
 namespace PamBio {
     class AuthenticateContext : GLib.Object {
-        public unowned PamHandler pamh;
+        public unowned PamHandler pamh { get; private set; }
+
+        public AuthenticateContext(PamHandler pamh, string[] args) {
+            this.pamh = pamh;
+            merge_argv(args);
+        }
+
+        // options
         public bool debug = false;
-        public bool enable_ssh { get; private set; default = false; }
-        public bool enable_closed_lid { get; private set; default = false; }
-        public bool enable_fprint { get; private set; default = true; }
-        public bool enable_howdy { get; private set;  default = true; }
+        public bool enable_ssh = false;
+        public bool enable_closed_lid = false;
+        public Set<string> modules = new HashSet<string>();
+
+        // computed properties
 
         public string username {
             get {
@@ -17,6 +25,36 @@ namespace PamBio {
                 return u;
             }
         }
+
+        public bool enable {
+            get {
+                var envp = Environ.get();
+
+                if (!enable_ssh) {
+                    if (
+                        Environ.get_variable(envp, "SSH_CONNECTION") != null ||
+                        Environ.get_variable(envp, "SSH_CLIENT") != null ||
+                        Environ.get_variable(envp, "SSHD_OPTS") != null
+                    ) {
+                        return false;
+                    }
+                }
+
+                if (!enable_closed_lid) {
+                    var g = Posix.Glob();
+                    g.glob("/proc/acpi/button/lid/*/state");
+                    foreach (var path in g.pathv) {
+                        if (path.contains("closed")) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+        }
+
+        // help methods
 
         public void log(SysLogPriorities priority, string? prefix, string msg) {
             if (this.debug || priority <= SysLogPriorities.ERR) {
@@ -28,8 +66,7 @@ namespace PamBio {
             }
         }
 
-        public void merge_argv(string[] argv) {
-            // parser argv
+        private void merge_argv(string[] argv) {
             foreach (var arg in argv) {
                 string[] kv = arg.split("=", 2);
                 string key = kv[0];
@@ -45,73 +82,48 @@ namespace PamBio {
                 case "enable_closed_lid":
                     enable_closed_lid = true;
                     break;
-                case "disable_howdy":
-                    enable_howdy = false;
-                    break;
-                case "disable_fprint":
-                    enable_fprint = false;
+                case "modules":
+                    modules.add_all_array(value.split(","));
                     break;
                 default:
                     pamh.syslog(SysLogPriorities.WARNING, @"unknown arg: $key");
                     break;
                 }
             }
-
-            // options side effect
-            var envp = Environ.get();
-            if (!enable_ssh) {
-                if (
-                    Environ.get_variable(envp, "SSH_CONNECTION") != null ||
-                    Environ.get_variable(envp, "SSH_CLIENT") != null ||
-                    Environ.get_variable(envp, "SSHD_OPTS") != null
-                ) {
-                    enable_fprint = false;
-                    enable_howdy = false;
-                }
-            }
-
-            if (!enable_closed_lid) {
-                var g = Posix.Glob();
-                g.glob("/proc/acpi/button/lid/*/state");
-                foreach (var path in g.pathv) {
-                    if (path.contains("closed")) {
-                        enable_fprint = false;
-                        enable_howdy = false;
-                        break;
-                    }
-                }
-            }
         }
     }
 
     interface Authentication : GLib.Object {
+        public virtual async bool preauth(Cancellable? cancellable = null)  throws IOError.CANCELLED {
+            return true;
+        }
         public abstract async AuthenticateResult auth(Cancellable? cancellable = null) throws Error;
         public abstract string name { owned get; }
     }
 
-    private async AuthenticateResult do_authenticate_async(PamHandler pamh, AuthenticateFlags flags, string[] argv) {
-        var res = AuthenticateResult.AUTH_ERR;
-
-        var ctx = new AuthenticateContext();
-        ctx.pamh = pamh;
-        ctx.merge_argv(argv);
-
-        var authentications = new ArrayList<Authentication>();
-        authentications.add(new PasswordAuthencation(ctx));
-
-        #if ENABLE_FPRINT
-        if (ctx.enable_fprint) {
-            authentications.add(new Fprint.FprintAuthentication(ctx));
+    private async Authentication[] check_authentications(
+        AuthenticateContext ctx,
+        Authentication[] available,
+        Cancellable? cancellable
+    ) throws IOError.CANCELLED {
+        Authentication[] result = new Authentication[available.length];
+        int i = 0;
+        foreach (var authn in available) {
+            if (ctx.modules.contains(authn.name)) {
+                if (yield authn.preauth(cancellable)) {
+                    result[i++] = authn;
+                }
+            }
         }
-        #endif
-        #if ENABLE_HOWDY
-        if (ctx.enable_howdy) {
-            authentications.add(new Howdy.HowdyAuthencation(ctx));
-        }
-        #endif
+        result.resize(i);
+        return result;
+    }
 
+    private async AuthenticateResult authenticate(
+        PamHandler pamh, AuthenticateFlags flags, string[] argv
+    ) {
+        // prepare cancellable
         var cancellable = new Cancellable();
-
         Unix.signal_add(Posix.Signal.INT, () => {
            cancellable.cancel();
            return Source.REMOVE;
@@ -128,7 +140,34 @@ namespace PamBio {
         //     return Source.REMOVE;
         // });
 
+        // prepare context
+        var ctx = new AuthenticateContext(pamh, argv);
+        if (!ctx.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
+
+        // check authentications
+        Authentication[] authentications;
+        try {
+            authentications = yield check_authentications(
+                ctx,
+                new Authentication[] {
+                    #if ENABLE_FPRINT
+                    new Fprint.FprintAuthentication(ctx),
+                    #endif
+                    #if ENABLE_HOWDY
+                    new Howdy.HowdyAuthencation(ctx),
+                    #endif
+                    new PasswordAuthencation(ctx)
+                },
+                cancellable
+            );
+        } catch (IOError.CANCELLED e) {
+            return AuthenticateResult.AUTH_ERR;
+        }
+
+        // do authenticate, run authenticate in parallel
+        // return success, cred_insufficient or last authenticate result
         var wg = new WaitGroup();
+        var res = AuthenticateResult.AUTHINFO_UNAVAIL;
         foreach (var authentication in authentications) {
             ctx.log(SysLogPriorities.DEBUG, authentication.name, "start");
 
@@ -152,6 +191,12 @@ namespace PamBio {
                     }
                 } catch (IOError.CANCELLED cancel) {
                     ctx.log(SysLogPriorities.DEBUG, authentication.name, "cancelled");
+                    if (
+                        res != AuthenticateResult.SUCCESS
+                        && res != AuthenticateResult.CRED_INSUFFICIENT
+                    ) {
+                        res = AuthenticateResult.AUTH_ERR;
+                    }
                 } catch (Error e) {
                     ctx.log(SysLogPriorities.ERR, authentication.name, @"unexcepted failed: $(e.domain) $(e.message)");
                 }
@@ -159,8 +204,8 @@ namespace PamBio {
                 wg.finish_cb();
             });
         }
+        yield wg.wait_n(authentications.length);
 
-        yield wg.wait_n(authentications.size);
         return res;
     }
 
@@ -171,9 +216,9 @@ namespace PamBio {
         string[] argv
     ) {
         var loop = new MainLoop();
-        AuthenticateResult auth_result = AuthenticateResult.AUTH_ERR;
-        do_authenticate_async.begin(pamh, flags, argv, (obj, res) => {
-            auth_result = do_authenticate_async.end(res);
+        AuthenticateResult auth_result = AuthenticateResult.AUTHINFO_UNAVAIL;
+        authenticate.begin(pamh, flags, argv, (obj, res) => {
+            auth_result = authenticate.end(res);
             loop.quit();
         });
         loop.run();
