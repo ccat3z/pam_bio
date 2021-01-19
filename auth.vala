@@ -18,21 +18,14 @@ namespace PamBio {
             }
         }
 
-        public void conv_info(string msg) {
-            this.pamh.prompt(MessageStyle.TEXT_INFO, null, msg);
-        }
-
-        public void conv_err(string msg) {
-            this.pamh.prompt(MessageStyle.ERROR_MSG, null, msg);
-        }
-
-        public void log_debug(string msg) {
-            if (this.debug)
-                this.pamh.syslog(SysLogPriorities.DEBUG, msg);
-        }
-
-        public void log_err(string msg) {
-            this.pamh.syslog(SysLogPriorities.ERR, msg);
+        public void log(SysLogPriorities priority, string? prefix, string msg) {
+            if (this.debug || priority <= SysLogPriorities.ERR) {
+                if (prefix != null) {
+                    this.pamh.syslog(priority, "%s: %s", prefix, msg);
+                } else {
+                    this.pamh.syslog(priority, "%s", msg);
+                }
+            }
         }
 
         public void merge_argv(string[] argv) {
@@ -137,8 +130,7 @@ namespace PamBio {
 
         var wg = new WaitGroup();
         foreach (var authentication in authentications) {
-            if (ctx.debug)
-                pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): start");
+            ctx.log(SysLogPriorities.DEBUG, authentication.name, "start");
 
             authentication.auth.begin(cancellable, (_, async_res) => {
                 try {
@@ -159,10 +151,9 @@ namespace PamBio {
                         }
                     }
                 } catch (IOError.CANCELLED cancel) {
-                    if (ctx.debug)
-                        pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): cancelled");
+                    ctx.log(SysLogPriorities.DEBUG, authentication.name, "cancelled");
                 } catch (Error e) {
-                    pamh.syslog(SysLogPriorities.ERR, @"$(authentication.name): unexcepted failed: $(e.domain) $(e.message)");
+                    ctx.log(SysLogPriorities.ERR, authentication.name, @"unexcepted failed: $(e.domain) $(e.message)");
                 }
 
                 wg.finish_cb();

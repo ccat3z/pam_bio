@@ -33,11 +33,11 @@ namespace PamBio {
             cancellable.disconnect(cancel_sig);
 
             if (tok != null) {
-                ctx.log_debug(@"pass: got authtok");
+                ctx.log(SysLogPriorities.DEBUG, name, @"got authtok");
                 return AuthenticateResult.CRED_INSUFFICIENT;
             } else {
                 if (!cancellable.is_cancelled())
-                    ctx.log_err("pass: failed to retrieve pass");
+                    ctx.log(SysLogPriorities.ERR, name, "failed to retrieve pass");
                 return AuthenticateResult.AUTH_ERR;
             }
         }

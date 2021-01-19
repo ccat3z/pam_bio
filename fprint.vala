@@ -46,7 +46,7 @@ namespace PamBio.Fprint {
 			if (cancellable.is_cancelled())
 				throw new IOError.CANCELLED("cancelled");
 
-			ctx.log_debug("fprint: start verify fingerprint");
+			ctx.log(SysLogPriorities.DEBUG, name, "start verify fingerprint");
 
 			var wg = new WaitGroup();
 
@@ -65,13 +65,13 @@ namespace PamBio.Fprint {
 			do {
 				yield wg.wait_any();
 
-				ctx.log_debug(@"fprint: result=$(verify_res) done=$(verify_done)");
+				ctx.log(SysLogPriorities.DEBUG, name, @"result=$(verify_res) done=$(verify_done)");
 				if (verify_res == "verify-swipe-too-short") {
-					ctx.conv_info("Swipe too short!");
+					ctx.pamh.prompt(MessageStyle.ERROR_MSG, null, "Swipe too short!");
 				}
 			} while (!verify_done && !cancellable.is_cancelled());
 
-			ctx.log_debug("fprint: verify stopped");
+			ctx.log(SysLogPriorities.DEBUG, name, "verify stopped");
 			device.disconnect(verify_status_sig);
 			cancellable.disconnect(cancel_sig);
 			device.verify_stop();
@@ -84,28 +84,28 @@ namespace PamBio.Fprint {
 				throw new IOError.CANCELLED("cancelled");
 
 			var device = yield findDevice(cancellable);
-			ctx.log_debug(@"fprint: using device $(device.name)");
+			ctx.log(SysLogPriorities.DEBUG, name, @"using device $(device.name)");
 
 			var username = ctx.username;
-			ctx.log_debug("fprint: claim device");
+			ctx.log(SysLogPriorities.DEBUG, name, "claim device");
 			device.claim(username);
 
 			try {
 				var tries = 3;
 				while (tries-- > 0) {
 					if (yield verify(device, cancellable)) {
-						ctx.conv_info("Fingerprint is recognized");
+						ctx.pamh.prompt(MessageStyle.TEXT_INFO, null, "Fingerprint is recognized");
 						return AuthenticateResult.SUCCESS;
 					}
-					ctx.conv_err(@"Fingerprint not match. $tries chance left.");
+					ctx.pamh.prompt(MessageStyle.ERROR_MSG, null, @"Fingerprint not match. $tries chance left.");
 				}
 				return AuthenticateResult.MAXTRIES;
 			} finally {
-				ctx.log_debug("fprint: release device");
+				ctx.log(SysLogPriorities.DEBUG, name, "release device");
 				try {
 					device.release();
 				} catch (Error e) {
-					ctx.log_err(@"fprint: failed to release device: $(e.message)");
+					ctx.log(SysLogPriorities.ERR, name, @"failed to release device: $(e.message)");
 				}
 			}
 		}
