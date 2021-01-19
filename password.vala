@@ -14,22 +14,23 @@ namespace PamBio {
             weak string? tok = null;
             GetAuthTokResult res = GetAuthTokResult.AUTHTOK_ERR;
 
-            Mutex cb_mutex = Mutex();
+            var wg = new WaitGroup();
+
             var sig = ctx.pamh.get_authtok_async(GetAuthTokItem.AUTHTOK, null, (r, t) => {
                 res = r;
                 tok = t;
-                if (cb_mutex.trylock()) Idle.add(auth.callback);
+                wg.finish_cb();
             });
             ulong cancel_sig = 0;
             if (cancellable != null) {
                 cancel_sig = cancellable.connect(() => {
                     ctx.pamh.get_authtok_cancel(sig);
-                    if (cb_mutex.trylock()) Idle.add(auth.callback);
+                    wg.finish_cb();
                 });
             }
-            yield;
+
+            yield wg.wait_any();
             cancellable.disconnect(cancel_sig);
-            cb_mutex.unlock();
 
             if (tok != null) {
                 ctx.log_debug(@"pass: got authtok");

@@ -48,28 +48,22 @@ namespace PamBio.Fprint {
 
 			ctx.log_debug("fprint: start verify fingerprint");
 
-			var resume_cb_mutex = Mutex();
-			SourceFunc resume_cb = () => {
-				// skip if callback was invoked
-				if (resume_cb_mutex.trylock()) {
-					Idle.add(verify.callback);
-				} 
-				return true;
-			};
+			var wg = new WaitGroup();
 
 			string verify_res = "null";
 			bool verify_done = false;
 			var verify_status_sig = device.verify_status.connect((status, done) => {
 				verify_res = status;
 				verify_done = done;
-				resume_cb();
+				wg.finish_cb();
 			});
-			var cancel_sig = cancellable != null ? cancellable.connect(() => resume_cb()) : 0; 
+			var cancel_sig = cancellable != null ? cancellable.connect(() => {
+				wg.finish_cb();
+			}) : 0; 
 
 			device.verify_start("any");
 			do {
-				yield;
-				resume_cb_mutex.unlock();
+				yield wg.wait_any();
 
 				ctx.log_debug(@"fprint: result=$(verify_res) done=$(verify_done)");
 				if (verify_res == "verify-swipe-too-short") {

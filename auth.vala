@@ -98,7 +98,6 @@ namespace PamBio {
 
     private async AuthenticateResult do_authenticate_async(PamHandler pamh, AuthenticateFlags flags, string[] argv) {
         var res = AuthenticateResult.AUTH_ERR;
-        var res_mutex = Mutex();
 
         var ctx = new AuthenticateContext();
         ctx.pamh = pamh;
@@ -136,13 +135,12 @@ namespace PamBio {
         //     return Source.REMOVE;
         // });
 
+        var wg = new WaitGroup();
         foreach (var authentication in authentications) {
             if (ctx.debug)
                 pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): start");
 
             authentication.auth.begin(cancellable, (_, async_res) => {
-                res_mutex.lock();
-
                 try {
                     AuthenticateResult auth_res = authentication.auth.end(async_res);
                     if (ctx.debug)
@@ -167,16 +165,11 @@ namespace PamBio {
                     pamh.syslog(SysLogPriorities.ERR, @"$(authentication.name): unexcepted failed: $(e.domain) $(e.message)");
                 }
 
-                do_authenticate_async.callback();
-                res_mutex.unlock();
+                wg.finish_cb();
             });
         }
 
-        // wait all auth task
-        for (var i = 0; i < authentications.size; i++) {
-            yield;
-        }
-
+        yield wg.wait_n(authentications.size);
         return res;
     }
 
