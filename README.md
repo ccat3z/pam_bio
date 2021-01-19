@@ -7,6 +7,7 @@ PAM module that run howdy, fprint and retrieve password in parallel.
 - [ ] Document
 - [ ] disable_{fprint,howdy} by service name
 - [ ] Retrieve username before starting authn task
+- [ ] Check gdm settings before start fprint authn
 
 # Build
 
