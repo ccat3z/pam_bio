@@ -100,6 +100,7 @@ namespace PamBio.Fprint {
 				var tries = 3;
 				while (tries-- > 0) {
 					if (yield verify(device, cancellable)) {
+						ctx.conv_info("Fingerprint is recognized");
 						return AuthenticateResult.SUCCESS;
 					}
 					ctx.conv_err(@"Fingerprint not match. $tries chance left.");

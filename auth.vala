@@ -151,14 +151,8 @@ namespace PamBio {
                     // ignore this result if authenticate already successed
                     if (res != AuthenticateResult.SUCCESS) {
                         switch (res = auth_res) {
-                        // Prompt success message and cancel other auth task if success
+                        // Cancel other auth task if success or cred insufficient
                         case AuthenticateResult.SUCCESS:
-                            ctx.pamh.prompt(MessageStyle.TEXT_INFO, null, "Success");
-                            Idle.add(() => { cancellable.cancel(); return Source.REMOVE; });
-                            break;
-                        // Cancel other auth task if cred insufficient
-                        // e.g. The user entered a password, but we are not sure
-                        //      the password is correct.
                         case AuthenticateResult.CRED_INSUFFICIENT:
                             Idle.add(() => { cancellable.cancel(); return Source.REMOVE; });
                             break;

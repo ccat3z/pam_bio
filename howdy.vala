@@ -34,6 +34,7 @@ namespace PamBio.Howdy {
                 yield proc.wait_check_async();
                 var exit = proc.get_exit_status();
                 ctx.log_debug(@"howdy: compare.py exit with $exit");
+                ctx.conv_info("Face is recognized");
                 return exit == 0 ? AuthenticateResult.SUCCESS : AuthenticateResult.AUTH_ERR;
             } catch (GLib.Error e) {
                 ctx.log_debug(@"hodwy: subprocess failed: $(e.domain): $(e.message)");
