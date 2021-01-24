@@ -1,2 +1,5 @@
 option('howdy_compare', type: 'string', description: 'Path to howdy\'s compare.py')
 option('enable_fprint', type: 'boolean', value: true, description: 'Enable fprint')
+option('cancel_pam_conv_method', type: 'combo', value : 'simulate_enter_key',
+       choices: ['cancel_thread', 'simulate_enter_key'],
+       description: 'Methods for terminating the conv function')

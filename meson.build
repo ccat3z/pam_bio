@@ -19,11 +19,13 @@ pam_dep = cc.find_library('pam', has_headers: 'security/pam_modules.h')
 
 enable_fprint = get_option('enable_fprint')
 howdy_bin_path = get_option('howdy_compare')
+cancel_pam_conv_method = get_option('cancel_pam_conv_method')
 enable_howdy = howdy_bin_path != ''
 
 conf = configuration_data()
 conf.set_quoted('HOWDY_COMPARE', howdy_bin_path)
 conf.set('ENABLE_FPRINT', enable_fprint)
+conf.set('CANCEL_PAM_CONV_USE_' + cancel_pam_conv_method.to_upper(), true)
 configure_file(output: 'config.h', configuration: conf)
 
 auth = static_library(
