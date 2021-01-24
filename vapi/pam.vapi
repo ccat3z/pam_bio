@@ -12,8 +12,8 @@ namespace Pam {
         public GetAuthTokResult get_authtok(GetAuthTokItem item, out string authtok, string? prompt);
 
         // pam_async_ext
-        public ulong get_authtok_async(GetAuthTokItem item, string? prompt, GetAuthTokCallbackFunc callback);
-        public void get_authtok_cancel(ulong id);
+        public void *get_authtok_async(GetAuthTokItem item, string? prompt, GetAuthTokCallbackFunc callback);
+        public void get_authtok_cancel(void *p);
         public delegate void GetAuthTokCallbackFunc(GetAuthTokResult result, string? authtok);
     }
 
