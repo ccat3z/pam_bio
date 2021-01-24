@@ -2,14 +2,14 @@
 
 PAM module that run howdy, fprint and retrieve password in parallel.
 
-# TODO
+## TODO
 
 - [ ] Document
 - [ ] disable_{fprint,howdy} by service name
 - [ ] Retrieve username before starting authn task
 - [ ] Check gdm settings before start fprint authn
 
-# Build
+## Build
 
 ``` sh
 meson setup .build
@@ -17,7 +17,7 @@ meson compile -C .build
 meson install -C .build  # install pam_bio.so to /lib/security
 ```
 
-# Usage
+## Usage
 
 ```
 cat <<EOF > /etc/pam.d/test-pam-bio
@@ -29,14 +29,14 @@ auth optional pam_permit.so
 EOF
 ```
 
-# Options
+## Options
 
 - `debug`
 - `enable_ssh`
 - `enable_closed_lid`
 - `modules=howdy,fprint,pass`
 
-# Return Values
+## Return Values
 
 - `PAM_SUCCESS`: Authenticate succeed.
 - `PAM_CRED_INSUFFICIENT`:
@@ -49,7 +49,7 @@ EOF
 - `PAM_MAXTRIES`: All modules failure and last module return `PAM_MAXTRIES`.
 - `PAM_USER_UNKNOWN`: All modules failure and last module return `PAM_USER_UNKNOWN`.
 
-# Inspired by
+## Inspired by
 
 - [boltgolt/howdy#484](https://github.com/boltgolt/howdy/pull/484)
 - [zsxsoft/libfprint-fprintd](https://github.com/zsxsoft/libfprint-fprintd)
