@@ -4,6 +4,7 @@ PAM module that run howdy, fprint and retrieve password in parallel.
 
 ## TODO
 
+- [ ] Move signal handler into c part
 - [ ] Document
 - [ ] disable_{fprint,howdy} by service name
 - [ ] Retrieve username before starting authn task
