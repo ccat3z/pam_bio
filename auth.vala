@@ -93,7 +93,7 @@ namespace PamBio {
         }
     }
 
-    interface Authentication : GLib.Object {
+    interface AuthNProvider : GLib.Object {
         public virtual async bool preauth(Cancellable? cancellable = null)  throws IOError.CANCELLED {
             return true;
         }
@@ -101,12 +101,12 @@ namespace PamBio {
         public abstract string name { owned get; }
     }
 
-    private async Authentication[] check_authentications(
+    private async AuthNProvider[] check_authentications(
         AuthenticateContext ctx,
-        Authentication[] available,
+        AuthNProvider[] available,
         Cancellable? cancellable
     ) throws IOError.CANCELLED {
-        Authentication[] result = new Authentication[available.length];
+        AuthNProvider[] result = new AuthNProvider[available.length];
         int i = 0;
         foreach (var authn in available) {
             if (ctx.modules.contains(authn.name)) {
@@ -145,18 +145,18 @@ namespace PamBio {
         if (!ctx.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
 
         // check authentications
-        Authentication[] authentications;
+        AuthNProvider[] authentications;
         try {
             authentications = yield check_authentications(
                 ctx,
-                new Authentication[] {
+                new AuthNProvider[] {
                     #if ENABLE_FPRINT
-                    new Fprint.FprintAuthentication(ctx),
+                    new AuthNProviders.FprintAuthNProvider(ctx),
                     #endif
                     #if ENABLE_HOWDY
-                    new Howdy.HowdyAuthencation(ctx),
+                    new AuthNProviders.HowdyAuthNProvider(ctx),
                     #endif
-                    new PasswordAuthencation(ctx)
+                    new AuthNProviders.PasswordAuthNProvider(ctx)
                 },
                 cancellable
             );

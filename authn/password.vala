@@ -1,10 +1,10 @@
 using Pam;
 
-namespace PamBio {
-    class PasswordAuthencation : Object, Authentication {
+namespace PamBio.AuthNProviders {
+    class PasswordAuthNProvider : Object, AuthNProvider {
         private AuthenticateContext ctx;
 
-        public PasswordAuthencation(AuthenticateContext ctx) {
+        public PasswordAuthNProvider(AuthenticateContext ctx) {
             this.ctx = ctx;
         }
 

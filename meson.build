@@ -31,7 +31,11 @@ configure_file(output: 'config.h', configuration: conf)
 auth = static_library(
     'auth',
     name_prefix: '',
-    sources: ['auth.vala', 'fprint.vala', 'howdy.vala', 'password.vala', 'utils.vala'],
+    sources: [
+        'auth.vala', 'utils.vala',
+        'dbus/fprint.vala',
+        'authn/fprint.vala', 'authn/howdy.vala', 'authn/password.vala'
+    ],
     dependencies: [
         glib_dep,
         gobject_dep,

@@ -1,10 +1,10 @@
 using Pam;
 
-namespace PamBio.Howdy {
-    class HowdyAuthencation : Object, Authentication {
+namespace PamBio.AuthNProviders {
+    class HowdyAuthNProvider : Object, AuthNProvider {
         private AuthenticateContext ctx;
 
-        public HowdyAuthencation(AuthenticateContext ctx) {
+        public HowdyAuthNProvider(AuthenticateContext ctx) {
             this.ctx = ctx;
         }
 
