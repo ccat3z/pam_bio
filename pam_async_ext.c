@@ -123,6 +123,7 @@ void pam_get_authtok_cancel(pam_handle_t *pamh, void *d) {
     pthread_t thread = data->thread;
     simulate_enter_password();
     pthread_join(thread, NULL);
+    pam_set_item(pamh, PAM_AUTHTOK, NULL);
 }
 #elif defined(CANCEL_PAM_CONV_USE_CANCEL_THREAD)
 void pam_get_authtok_cancel(pam_handle_t *pamh, void *d) {
