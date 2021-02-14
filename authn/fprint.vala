@@ -49,22 +49,26 @@ namespace PamBio.AuthNProviders {
 
 			ctx.log(SysLogPriorities.DEBUG, name, "start verify fingerprint");
 
-			var wg = new WaitGroup();
-
 			string verify_res = "null";
 			bool verify_done = false;
 			var verify_status_sig = device.verify_status.connect((status, done) => {
 				verify_res = status;
 				verify_done = done;
-				wg.finish_cb();
+				verify.callback();
 			});
-			var cancel_sig = cancellable != null ? cancellable.connect(() => {
-				wg.finish_cb();
-			}) : 0; 
+
+			var cancelSource = new CancellableSource(cancellable);
+			cancelSource.set_callback(_ => {
+				device.disconnect(verify_status_sig);
+				verify_status_sig = 0;
+				verify.callback();
+				return Source.REMOVE;
+			});
+			cancelSource.attach();
 
 			device.verify_start("any");
 			do {
-				yield wg.wait_any();
+				yield;
 
 				ctx.log(SysLogPriorities.DEBUG, name, @"result=$(verify_res) done=$(verify_done)");
 				if (verify_res == "verify-swipe-too-short") {
@@ -73,8 +77,8 @@ namespace PamBio.AuthNProviders {
 			} while (!verify_done && !cancellable.is_cancelled());
 
 			ctx.log(SysLogPriorities.DEBUG, name, "verify stopped");
-			device.disconnect(verify_status_sig);
-			cancellable.disconnect(cancel_sig);
+			if (verify_status_sig > 0) device.disconnect(verify_status_sig);
+			cancelSource.destroy();
 			device.verify_stop();
 
 			return verify_res == "verify-match";
