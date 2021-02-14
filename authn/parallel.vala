@@ -12,10 +12,18 @@ namespace PamBio.AuthNProviders {
 
         public async AuthenticateResult auth(Cancellable? cancellable = null) throws Error {
             var res = AuthenticateResult.AUTHINFO_UNAVAIL;
+            var providerCancellable = new Cancellable();
+            var cancelSource = new CancellableSource(cancellable);
+            cancelSource.set_callback(_ => {
+                providerCancellable.cancel();
+                return Source.REMOVE;
+            });
+            cancelSource.attach();
+
             foreach (var authentication in providers) {
                 ctx.log(SysLogPriorities.DEBUG, authentication.name, "start");
 
-                authentication.auth.begin(cancellable, (_, async_res) => {
+                authentication.auth.begin(providerCancellable, (_, async_res) => {
                     try {
                         AuthenticateResult auth_res = authentication.auth.end(async_res);
                         ctx.log(SysLogPriorities.DEBUG, authentication.name, @"auth result: $auth_res");
@@ -26,7 +34,7 @@ namespace PamBio.AuthNProviders {
                             // Cancel other auth task if success or cred insufficient
                             case AuthenticateResult.SUCCESS:
                             case AuthenticateResult.CRED_INSUFFICIENT:
-                                Idle.add(() => { cancellable.cancel(); return Source.REMOVE; });
+                                providerCancellable.cancel();
                                 break;
                             default:
                                 break;
@@ -49,6 +57,7 @@ namespace PamBio.AuthNProviders {
             }
 
             for (int i = 0; i < providers.length; i++) yield;
+            cancelSource.destroy();
             return res;
         }
 
