@@ -8,6 +8,7 @@ namespace Pam {
         public void *get_item(ItemType item_type, out void *item);
         public int get_user(out unowned string user, out string prompt);	 
         public int syslog(SysLogPriorities priority, string fmt, ...);
+        public string strerror(int errnum);
 
         // pam_ext
         public int prompt(MessageStyle style, out string response, string fmt, ...);
