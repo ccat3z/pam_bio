@@ -1,7 +1,7 @@
 using Pam;
 
 namespace PamBio.AuthNProviders {
-    class ParallelAuthNProvider : GLib.Object, PamBio.AuthNProvider {
+    class ParallelAuthNProvider : GLib.Object, AuthNProvider {
         private AuthNProvider[] providers;
         private AuthenticateContext ctx;
 
