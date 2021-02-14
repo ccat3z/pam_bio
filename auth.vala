@@ -94,60 +94,20 @@ namespace PamBio {
     }
 
     interface AuthNProvider : GLib.Object {
-        public virtual async bool preauth(Cancellable? cancellable = null)  throws IOError.CANCELLED {
-            return true;
-        }
         public abstract async AuthenticateResult auth(Cancellable? cancellable = null) throws Error;
         public abstract string name { owned get; }
-    }
-
-    private async AuthNProvider[] check_authentications(
-        AuthenticateContext ctx,
-        AuthNProvider[] available,
-        Cancellable? cancellable
-    ) throws IOError.CANCELLED {
-        AuthNProvider[] result = new AuthNProvider[available.length];
-        int i = 0;
-        foreach (var authn in available) {
-            if (ctx.modules.contains(authn.name)) {
-                if (yield authn.preauth(cancellable)) {
-                    result[i++] = authn;
-                }
-            }
-        }
-        result.resize(i);
-        return result;
     }
 
     private async AuthenticateResult authenticate(
         PamHandler pamh, AuthenticateFlags flags, string[] argv
     ) {
-        // prepare cancellable
         var cancellable = new Cancellable();
-        Unix.signal_add(Posix.Signal.INT, () => {
-           cancellable.cancel();
-           return Source.REMOVE;
-        });
 
-        // TODO: may cause gnome shell freeze
-        // Handle SIGTERM may cause gnome shell (polkit)
-        // to freeze for a few seconds.
-        // I have not idea on what cause this issue.
-        // Since cleanup seems not necessay, I commented out the handler.
-        //
-        // Unix.signal_add(Posix.Signal.TERM, () => {
-        //     cancellable.cancel();
-        //     return Source.REMOVE;
-        // });
-
-        // prepare context
-        var ctx = new AuthenticateContext(pamh, argv);
-        if (!ctx.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
-
-        // check authentications
-        AuthNProvider[] authentications;
         try {
-            authentications = yield check_authentications(
+            var ctx = new AuthenticateContext(pamh, argv);
+            if (!ctx.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
+
+            var provider = new AuthNProviders.ParallelAuthNProvider(
                 ctx,
                 new AuthNProvider[] {
                     #if ENABLE_FPRINT
@@ -157,56 +117,14 @@ namespace PamBio {
                     new AuthNProviders.HowdyAuthNProvider(ctx),
                     #endif
                     new AuthNProviders.PasswordAuthNProvider(ctx)
-                },
-                cancellable
-            );
-        } catch (IOError.CANCELLED e) {
-            return AuthenticateResult.AUTH_ERR;
-        }
-
-        // do authenticate, run authenticate in parallel
-        // return success, cred_insufficient or last authenticate result
-        var wg = new WaitGroup();
-        var res = AuthenticateResult.AUTHINFO_UNAVAIL;
-        foreach (var authentication in authentications) {
-            ctx.log(SysLogPriorities.DEBUG, authentication.name, "start");
-
-            authentication.auth.begin(cancellable, (_, async_res) => {
-                try {
-                    AuthenticateResult auth_res = authentication.auth.end(async_res);
-                    if (ctx.debug)
-                        pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): auth result: $auth_res");
-
-                    // ignore this result if authenticate already successed
-                    if (res != AuthenticateResult.SUCCESS) {
-                        switch (res = auth_res) {
-                        // Cancel other auth task if success or cred insufficient
-                        case AuthenticateResult.SUCCESS:
-                        case AuthenticateResult.CRED_INSUFFICIENT:
-                            Idle.add(() => { cancellable.cancel(); return Source.REMOVE; });
-                            break;
-                        default:
-                            break;
-                        }
-                    }
-                } catch (IOError.CANCELLED cancel) {
-                    ctx.log(SysLogPriorities.DEBUG, authentication.name, "cancelled");
-                    if (
-                        res != AuthenticateResult.SUCCESS
-                        && res != AuthenticateResult.CRED_INSUFFICIENT
-                    ) {
-                        res = AuthenticateResult.AUTH_ERR;
-                    }
-                } catch (Error e) {
-                    ctx.log(SysLogPriorities.ERR, authentication.name, @"unexcepted failed: $(e.domain) $(e.message)");
                 }
-
-                wg.finish_cb();
-            });
+            );
+            return yield provider.auth(cancellable);
+        } catch (Error e) {
+            return AuthenticateResult.AUTH_ERR;
+        } finally {
+            cancellable.cancel();
         }
-        yield wg.wait_n(authentications.length);
-
-        return res;
     }
 
     [CCode(cname = "do_authenticate")]

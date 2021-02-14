@@ -34,7 +34,8 @@ auth = static_library(
     sources: [
         'auth.vala', 'utils.vala',
         'dbus/fprint.vala',
-        'authn/fprint.vala', 'authn/howdy.vala', 'authn/password.vala'
+        'authn/fprint.vala', 'authn/howdy.vala', 'authn/password.vala',
+        'authn/parallel.vala'
     ],
     dependencies: [
         glib_dep,
