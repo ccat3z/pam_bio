@@ -11,7 +11,6 @@ namespace PamBio.AuthNProviders {
         }
 
         public async AuthenticateResult auth(Cancellable? cancellable = null) throws Error {
-            var wg = new WaitGroup();
             var res = AuthenticateResult.AUTHINFO_UNAVAIL;
             foreach (var authentication in providers) {
                 ctx.log(SysLogPriorities.DEBUG, authentication.name, "start");
@@ -19,8 +18,7 @@ namespace PamBio.AuthNProviders {
                 authentication.auth.begin(cancellable, (_, async_res) => {
                     try {
                         AuthenticateResult auth_res = authentication.auth.end(async_res);
-                        if (ctx.debug)
-                            ctx.pamh.syslog(SysLogPriorities.DEBUG, @"$(authentication.name): auth result: $auth_res");
+                        ctx.log(SysLogPriorities.DEBUG, authentication.name, @"auth result: $auth_res");
 
                         // ignore this result if authenticate already successed
                         if (res != AuthenticateResult.SUCCESS) {
@@ -46,11 +44,11 @@ namespace PamBio.AuthNProviders {
                         ctx.log(SysLogPriorities.ERR, authentication.name, @"unexcepted failed: $(e.domain) $(e.message)");
                     }
 
-                    wg.finish_cb();
+                    auth.callback();
                 });
             }
 
-            yield wg.wait_n(providers.length);
+            for (int i = 0; i < providers.length; i++) yield;
             return res;
         }
 
