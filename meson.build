@@ -28,11 +28,11 @@ conf.set('ENABLE_FPRINT', enable_fprint)
 conf.set('CANCEL_PAM_CONV_USE_' + cancel_pam_conv_method.to_upper(), true)
 configure_file(output: 'config.h', configuration: conf)
 
-auth = static_library(
-    'auth',
+pam_bio_vala = static_library(
+    'pam_bio_vala',
     name_prefix: '',
     sources: [
-        'auth.vala',
+        'pam_bio.vala',
         'dbus/fprint.vala',
         'authn/fprint.vala', 'authn/howdy.vala', 'authn/password.vala',
         'authn/parallel.vala'
@@ -52,7 +52,7 @@ auth = static_library(
         enable_howdy ? ['-D', 'ENABLE_HOWDY'] : [],
     ]
 )
-auth_dep = declare_dependency(link_with: auth)
+auth_dep = declare_dependency(link_with: pam_bio_vala)
 
 pam_bio = shared_module(
     'pam_bio',
