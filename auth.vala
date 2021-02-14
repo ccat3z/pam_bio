@@ -102,10 +102,11 @@ namespace PamBio {
         PamHandler pamh, AuthenticateFlags flags, string[] argv
     ) {
         var cancellable = new Cancellable();
+        var ctx = new AuthenticateContext(pamh, argv);
+        if (!ctx.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
 
         try {
-            var ctx = new AuthenticateContext(pamh, argv);
-            if (!ctx.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
+            ctx.log(SysLogPriorities.INFO, null, "pam_bio started");
 
             var provider = new AuthNProviders.ParallelAuthNProvider(
                 ctx,
@@ -119,8 +120,11 @@ namespace PamBio {
                     new AuthNProviders.PasswordAuthNProvider(ctx)
                 }
             );
-            return yield provider.auth(cancellable);
+            var res = yield provider.auth(cancellable);
+            ctx.log(SysLogPriorities.INFO, null, @"pam_bio $res");
+            return res;
         } catch (Error e) {
+            ctx.log(SysLogPriorities.ERR, null, @"pam_bio failed: $(e.domain) $(e.message)");
             return AuthenticateResult.AUTH_ERR;
         } finally {
             cancellable.cancel();
