@@ -23,12 +23,12 @@ namespace PamBio.AuthNProviders {
             redirect_input_stream.begin(proc.get_stdout_pipe(), SysLogPriorities.DEBUG);
             redirect_input_stream.begin(proc.get_stderr_pipe(), SysLogPriorities.WARNING);
             
-            ulong cancel_sig = 0;
-            if (cancellable != null) {
-                cancel_sig = cancellable.connect(() => {
-                    proc.send_signal(Posix.Signal.INT);
-                });
-            }
+            var cancelSource = new CancellableSource(cancellable);
+            cancelSource.set_callback(_ => {
+                proc.send_signal(Posix.Signal.INT);
+                return Source.REMOVE;
+            });
+            cancelSource.attach();
 
             try {
                 yield proc.wait_check_async();
@@ -40,7 +40,7 @@ namespace PamBio.AuthNProviders {
                 ctx.log(SysLogPriorities.WARNING, name, @"subprocess failed: $(e.domain): $(e.message)");
                 return AuthenticateResult.AUTH_ERR;
             } finally {
-                cancellable.disconnect(cancel_sig);
+                cancelSource.destroy();
             }
         }
     }
