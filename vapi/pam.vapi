@@ -1,3 +1,5 @@
+using GLib;
+
 [CCode(cheader_filename = "security/pam_modules.h,security/pam_ext.h,pam_async_ext.h,sys/syslog.h")]
 namespace Pam {
     [CCode(cname = "pam_handle_t", cprefix = "pam_")]
@@ -12,9 +14,7 @@ namespace Pam {
         public GetAuthTokResult get_authtok(GetAuthTokItem item, out string authtok, string? prompt);
 
         // pam_async_ext
-        public void *get_authtok_async(GetAuthTokItem item, string? prompt, GetAuthTokCallbackFunc callback);
-        public void get_authtok_cancel(void *p);
-        public delegate void GetAuthTokCallbackFunc(GetAuthTokResult result, string? authtok);
+        public async GetAuthTokResult get_authtok_async(GetAuthTokItem item, string? prompt, Cancellable? cancellable, out unowned string authtok) throws Error;
     }
 
     [CCode(cname = "struct pam_message")]

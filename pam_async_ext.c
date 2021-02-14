@@ -11,37 +11,67 @@
 
 typedef struct {
     pam_handle_t *pamh;
-    int item;
-    pam_get_authtok_cb callback;
-    const void *callback_data;
-    const char *prompt;
     pthread_t thread;
-} pam_get_authtok_data_t;
+    int item;
+    const char *prompt;
+    const char *authtok;
+    GSource *cancel_source;
+} pam_get_authtok_data;
 
-static void free_pam_get_authtok_data_t (pam_get_authtok_data_t *data) {
+static void free_pam_get_authtok_data (pam_get_authtok_data *data) {
+    g_source_unref(data->cancel_source);
     free(data);
 }
 
-static void *pam_get_authtok_thread(void *d) {
-    pam_get_authtok_data_t *data = (pam_get_authtok_data_t *) d;
-    const char *authtok;
-    int res = pam_get_authtok(data->pamh, data->item, &authtok, data->prompt);
-    data->callback(res, authtok, data->callback_data);
-    free_pam_get_authtok_data_t(data);
+static gboolean pam_get_authtok_cancel(GCancellable *cancellable, GTask *task);
+
+static void *pam_get_authtok_thread(GTask *task) {
+    pam_get_authtok_data *data = g_task_get_task_data(task);
+    pam_handle_t *pamh = data->pamh;
+
+    if (g_task_set_return_on_cancel(task, FALSE)) {
+        int res = pam_get_authtok(pamh, data->item, &data->authtok, data->prompt);
+        g_task_return_int(task, res);
+    }
+
+    g_source_destroy(data->cancel_source);
+    g_object_unref(task);
     pthread_exit(NULL);
 }
 
-void *pam_get_authtok_async(pam_handle_t *pamh, int item, const char *prompt, pam_get_authtok_cb callback, const void *callback_data) {
-    pam_get_authtok_data_t *data = malloc(sizeof(pam_get_authtok_data_t));
-    data->pamh = pamh;
+void pam_get_authtok_async(
+    pam_handle_t *pamh, int item, const char *prompt,
+    GCancellable *cancellable,
+    GAsyncReadyCallback callback,
+    gpointer callback_data
+) {
+    pam_get_authtok_data *data = malloc(sizeof(pam_get_authtok_data));
     data->item = item;
-    data->callback = callback;
     data->prompt = prompt;
-    data->callback_data = callback_data;
+    data->pamh = pamh;
+
+    GTask *task = g_task_new(NULL, cancellable, callback, callback_data);
+    g_task_set_task_data(task, data, (GDestroyNotify) free_pam_get_authtok_data);
+
+    pthread_create(&data->thread, NULL, (void *(*)(void *)) pam_get_authtok_thread, task);
+
+    data->cancel_source = g_cancellable_source_new(cancellable);
+    g_source_set_callback(data->cancel_source, G_SOURCE_FUNC(pam_get_authtok_cancel), task, NULL);
+    g_source_attach(data->cancel_source, NULL);
+}
+
+int pam_get_authtok_finish (
+    pam_handle_t *pamh,
+    GAsyncResult *result,
+    const char **authtok,
+    GError **error
+) {
+    GTask *task = G_TASK(result);
+    pam_get_authtok_data *data = g_task_get_task_data(task);
+    if (authtok != NULL)
+        *authtok = data->authtok;
     
-    pthread_create(&data->thread, NULL, pam_get_authtok_thread, data);
-    // pam_syslog(pamh, LOG_DEBUG, "start get_authtok: %p", data);
-    return data;
+    return g_task_propagate_int(G_TASK(result), error);
 }
 
 #ifdef CANCEL_PAM_CONV_USE_SIMULATE_ENTER_KEY
@@ -117,21 +147,28 @@ static int simulate_enter_password() {
    return 0;
 }
 
-void pam_get_authtok_cancel(pam_handle_t *pamh, void *d) {
-    // pam_syslog(pamh, LOG_DEBUG, "cancel get_authtok: %p", d);
-    pam_get_authtok_data_t *data = (pam_get_authtok_data_t *) d;
+static gboolean pam_get_authtok_cancel(GCancellable *cancellable, GTask *task) {
+    g_object_ref(task);
+    pam_get_authtok_data *data = g_task_get_task_data(task);
+    pam_handle_t *pamh = data->pamh;
     pthread_t thread = data->thread;
+
     simulate_enter_password();
     pthread_join(thread, NULL);
     pam_set_item(pamh, PAM_AUTHTOK, NULL);
+
+    g_object_unref(task);
+    return G_SOURCE_REMOVE;
 }
 #elif defined(CANCEL_PAM_CONV_USE_CANCEL_THREAD)
-void pam_get_authtok_cancel(pam_handle_t *pamh, void *d) {
-    // pam_syslog(pamh, LOG_DEBUG, "cancel get_authtok: %p", d);
-    pam_get_authtok_data_t *data = (pam_get_authtok_data_t *) d;
+static gboolean pam_get_authtok_cancel(GCancellable *cancellable, GTask *task) {
+    g_object_ref(task);
+    pam_get_authtok_data *data = g_task_get_task_data(task);
     pthread_cancel(data->thread);
     pthread_join(data->thread, NULL);
-    free_pam_get_authtok_data_t(data);
+
+    g_object_unref(task);
+    return G_SOURCE_REMOVE;
 }
 #else
 #error "unsupport cancel_pam_conv_method"

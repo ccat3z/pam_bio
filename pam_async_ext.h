@@ -1,6 +1,17 @@
 #pragma once
 #include <security/pam_ext.h>
+#include <gio/gio.h>
 
-typedef void (*pam_get_authtok_cb)(int result, const char *authtok, const void *data);
-void *pam_get_authtok_async(pam_handle_t *pamh, int item, const char *prompt, pam_get_authtok_cb callback, const void *callback_data);
-void pam_get_authtok_cancel(pam_handle_t *pamh, void *d);
+void pam_get_authtok_async (
+    pam_handle_t *pamh, int item, const char *prompt,
+    GCancellable *cancellable,
+    GAsyncReadyCallback callback,
+    gpointer user_data
+);
+
+int pam_get_authtok_finish (
+    pam_handle_t *pamh,
+    GAsyncResult *result,
+    const char** authtok,
+    GError **error
+);
