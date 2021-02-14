@@ -32,7 +32,7 @@ auth = static_library(
     'auth',
     name_prefix: '',
     sources: [
-        'auth.vala', 'utils.vala',
+        'auth.vala',
         'dbus/fprint.vala',
         'authn/fprint.vala', 'authn/howdy.vala', 'authn/password.vala',
         'authn/parallel.vala'
