@@ -11,6 +11,34 @@ namespace PamBio {
         public bool enable_closed_lid = false;
         public Set<string> modules = new HashSet<string>();
 
+        public bool enable {
+            get {
+                var envp = Environ.get();
+
+                if (!enable_ssh) {
+                    if (
+                        Environ.get_variable(envp, "SSH_CONNECTION") != null ||
+                        Environ.get_variable(envp, "SSH_CLIENT") != null ||
+                        Environ.get_variable(envp, "SSHD_OPTS") != null
+                    ) {
+                        return false;
+                    }
+                }
+
+                if (!enable_closed_lid) {
+                    var g = Posix.Glob();
+                    g.glob("/proc/acpi/button/lid/*/state");
+                    foreach (var path in g.pathv) {
+                        if (path.contains("closed")) {
+                            return false;
+                        }
+                    }
+                }
+
+                return true;
+            }
+        }
+
         public void from_argv(string[] argv) throws ConfigError {
             foreach (var arg in argv) {
                 string[] kv = arg.split("=", 2);

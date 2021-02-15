@@ -46,8 +46,9 @@ namespace PamBio {
             return AuthenticateResult.AUTH_ERR;
         }
 
+        if (!config.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
+
         var ctx = new PamAuthenticateContext(pamh, config);
-        if (!ctx.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
 
         try {
             ctx.log(SysLogPriorities.INFO, null, "pam_bio started");
