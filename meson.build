@@ -32,7 +32,7 @@ pam_bio_vala = static_library(
     'pam_bio_vala',
     name_prefix: '',
     sources: [
-        'pam_bio.vala', 'context.vala',
+        'pam_bio.vala', 'context.vala', 'config.vala',
         'dbus/fprint.vala',
         'authn/base.vala', 'authn/fprint.vala', 'authn/howdy.vala',
         'authn/password.vala', 'authn/parallel.vala'

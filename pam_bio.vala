@@ -5,7 +5,16 @@ namespace PamBio {
         PamHandler pamh, AuthenticateFlags flags, string[] argv
     ) {
         var cancellable = new Cancellable();
-        var ctx = new AuthenticateContext(pamh, argv);
+
+        var config = new Config();
+        try {
+            config.from_argv(argv);
+        } catch (Error e) {
+            pamh.syslog(SysLogPriorities.ERR, @"pam_bio failed: $(e.domain) $(e.message)");
+            return AuthenticateResult.AUTH_ERR;
+        }
+
+        var ctx = new AuthenticateContext(pamh, config);
         if (!ctx.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
 
         try {
