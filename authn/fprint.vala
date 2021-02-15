@@ -72,7 +72,7 @@ namespace PamBio.AuthNProviders {
 
 				ctx.log(SysLogPriorities.DEBUG, name, @"result=$(verify_res) done=$(verify_done)");
 				if (verify_res == "verify-swipe-too-short") {
-					ctx.pamh.prompt(MessageStyle.ERROR_MSG, null, "Swipe too short!");
+					ctx.prompt(MessageStyle.ERROR_MSG, null, "Swipe too short!");
 				}
 			} while (!verify_done && !cancellable.is_cancelled());
 
@@ -99,10 +99,10 @@ namespace PamBio.AuthNProviders {
 				var tries = 3;
 				while (tries-- > 0) {
 					if (yield verify(device, cancellable)) {
-						ctx.pamh.prompt(MessageStyle.TEXT_INFO, null, "Fingerprint is recognized");
+						ctx.prompt(MessageStyle.TEXT_INFO, null, "Fingerprint is recognized");
 						return AuthenticateResult.SUCCESS;
 					}
-					ctx.pamh.prompt(MessageStyle.ERROR_MSG, null, @"Fingerprint not match. $tries chance left.");
+					ctx.prompt(MessageStyle.ERROR_MSG, null, @"Fingerprint not match. $tries chance left.");
 				}
 				return AuthenticateResult.MAXTRIES;
 			} finally {

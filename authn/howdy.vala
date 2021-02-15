@@ -34,7 +34,7 @@ namespace PamBio.AuthNProviders {
                 yield proc.wait_check_async();
                 var exit = proc.get_exit_status();
                 ctx.log(SysLogPriorities.DEBUG, name, @"compare.py exit with $exit");
-                ctx.pamh.prompt(MessageStyle.TEXT_INFO, null, "Face is recognized");
+                ctx.prompt(MessageStyle.TEXT_INFO, null, "Face is recognized");
                 return exit == 0 ? AuthenticateResult.SUCCESS : AuthenticateResult.AUTH_ERR;
             } catch (GLib.Error e) {
                 ctx.log(SysLogPriorities.WARNING, name, @"subprocess failed: $(e.domain): $(e.message)");

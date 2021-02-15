@@ -2,9 +2,9 @@ using Pam;
 
 namespace PamBio.AuthNProviders {
     class PasswordAuthNProvider : Object, AuthNProvider {
-        private AuthenticateContext ctx;
+        private PamAuthenticateContext ctx;
 
-        public PasswordAuthNProvider(AuthenticateContext ctx) {
+        public PasswordAuthNProvider(PamAuthenticateContext ctx) {
             this.ctx = ctx;
         }
 

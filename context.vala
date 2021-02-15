@@ -2,23 +2,9 @@ using Gee;
 using Pam;
 
 namespace PamBio {
-    class AuthenticateContext : GLib.Object {
-        public unowned PamHandler pamh { get; private set; }
-        public Config config { get; private set; }
-
-        public AuthenticateContext(PamHandler pamh, Config config) {
-            this.pamh = pamh;
-            this.config = config;
-        }
-
-        public string username {
-            get {
-                weak string u;
-                pamh.get_user(out u, null);
-                return u;
-            }
-        }
-
+    interface AuthenticateContext : GLib.Object {
+        public abstract Config config { get; protected set; }
+        public abstract string username { get; }
         public bool enable {
             get {
                 var envp = Environ.get();
@@ -47,14 +33,7 @@ namespace PamBio {
             }
         }
 
-        public void log(SysLogPriorities priority, string? prefix, string msg) {
-            if (this.config.debug || priority <= SysLogPriorities.ERR) {
-                if (prefix != null) {
-                    this.pamh.syslog(priority, "%s: %s", prefix, msg);
-                } else {
-                    this.pamh.syslog(priority, "%s", msg);
-                }
-            }
-        }
+        public abstract void log(SysLogPriorities priority, string? prefix, string messsage);
+        public abstract void prompt(MessageStyle style, out string resp, string message);
     }
 }

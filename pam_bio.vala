@@ -1,6 +1,38 @@
 using Pam;
 
 namespace PamBio {
+    class PamAuthenticateContext : GLib.Object, AuthenticateContext {
+        public unowned PamHandler pamh { get; private set; }
+        public Config config { get; protected set; }
+
+        public PamAuthenticateContext(PamHandler pamh, Config config) {
+            this.pamh = pamh;
+            this.config = config;
+        }
+
+        public string username {
+            get {
+                weak string u;
+                pamh.get_user(out u, null);
+                return u;
+            }
+        }
+
+        public void log(SysLogPriorities priority, string? prefix, string msg) {
+            if (this.config.debug || priority <= SysLogPriorities.ERR) {
+                if (prefix != null) {
+                    this.pamh.syslog(priority, "%s: %s", prefix, msg);
+                } else {
+                    this.pamh.syslog(priority, "%s", msg);
+                }
+            }
+        }
+
+        public void prompt(MessageStyle style, out string resp, string message) {
+            pamh.prompt(style, out resp, message);
+        }
+    }
+
     private async AuthenticateResult authenticate(
         PamHandler pamh, AuthenticateFlags flags, string[] argv
     ) {
@@ -14,7 +46,7 @@ namespace PamBio {
             return AuthenticateResult.AUTH_ERR;
         }
 
-        var ctx = new AuthenticateContext(pamh, config);
+        var ctx = new PamAuthenticateContext(pamh, config);
         if (!ctx.enable) return AuthenticateResult.AUTHINFO_UNAVAIL;
 
         try {
