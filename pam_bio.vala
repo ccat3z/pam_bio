@@ -56,12 +56,7 @@ namespace PamBio {
             var provider = new AuthNProviders.ParallelAuthNProvider(
                 ctx,
                 new AuthNProviders.AuthNProvider[] {
-                    #if ENABLE_FPRINT
-                    new AuthNProviders.FprintAuthNProvider(ctx),
-                    #endif
-                    #if ENABLE_HOWDY
-                    new AuthNProviders.HowdyAuthNProvider(ctx),
-                    #endif
+                    new AuthNProviders.DaemonAuthNProvider(ctx),
                     new AuthNProviders.PasswordAuthNProvider(ctx)
                 }
             );

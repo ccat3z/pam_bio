@@ -28,14 +28,14 @@ conf.set('ENABLE_FPRINT', enable_fprint)
 conf.set('CANCEL_PAM_CONV_USE_' + cancel_pam_conv_method.to_upper(), true)
 configure_file(output: 'config.h', configuration: conf)
 
-pam_bio_vala = static_library(
-    'pam_bio_vala',
+pam_bio_daemon = executable(
+    'pam_biod',
     name_prefix: '',
     sources: [
-        'pam_bio.vala', 'context.vala', 'config.vala',
-        'dbus/fprint.vala',
-        'authn/base.vala', 'authn/fprint.vala', 'authn/howdy.vala',
-        'authn/password.vala', 'authn/parallel.vala'
+        'daemon.vala', 'context.vala', 'config.vala', 'authn/base.vala',
+        'dbus/fprint.vala', 'dbus/dbus.vala',
+        'authn/fprint.vala', 'authn/howdy.vala',
+        'authn/parallel.vala'
     ],
     dependencies: [
         glib_dep,
@@ -50,6 +50,36 @@ pam_bio_vala = static_library(
     vala_args: [
         enable_fprint ? ['-D', 'ENABLE_FPRINT'] : [],
         enable_howdy ? ['-D', 'ENABLE_HOWDY'] : [],
+    ],
+    c_args: [
+        '-DG_LOG_DOMAIN="PamBio"'
+    ]
+)
+
+pam_bio_vala = static_library(
+    'pam_bio_vala',
+    name_prefix: '',
+    sources: [
+        'pam_bio.vala', 'context.vala', 'config.vala', 'authn/base.vala',
+        'dbus/daemon.vala',
+        'authn/password.vala', 'authn/parallel.vala', 'authn/daemon.vala'
+    ],
+    dependencies: [
+        glib_dep,
+        gobject_dep,
+        gio_dep,
+        pam_dep,
+        gee_dep,
+        valac.find_library('pam', dirs: vapi_dir),
+        valac.find_library('config', dirs: vapi_dir),
+        valac.find_library('posix')
+    ],
+    vala_args: [
+        enable_fprint ? ['-D', 'ENABLE_FPRINT'] : [],
+        enable_howdy ? ['-D', 'ENABLE_HOWDY'] : [],
+    ],
+    c_args: [
+        '-DG_LOG_DOMAIN="PamBio"'
     ]
 )
 auth_dep = declare_dependency(link_with: pam_bio_vala)
