@@ -124,7 +124,7 @@ static int simulate_enter_password() {
     * the event, otherwise it will not notice the event we are about
     * to send. This pause is only needed in our example code!
     */
-   sleep(1);
+   g_usleep(250000);
 
    /* Key press, report the event, send key release, and report again */
    uinput_press(fd, KEY_A);
@@ -139,7 +139,7 @@ static int simulate_enter_password() {
     * Give userspace some time to read the events before we destroy the
     * device with UI_DEV_DESTOY.
     */
-   sleep(1);
+   g_usleep(250000);
 
    ioctl(fd, UI_DEV_DESTROY);
    close(fd);
