@@ -11,6 +11,9 @@ namespace PamBio.AuthNProviders {
 
         public async AuthenticateResult auth(Cancellable? cancellable = null) throws Error {
             var daemon = yield Bus.get_proxy<PamBio.Daemon>(BusType.SYSTEM, "xyz.ccat3z.pambio", "/xyz/ccat3z/pambio");
+            daemon.prompt.connect((msg, err) => {
+                ctx.prompt(err ? MessageStyle.ERROR_MSG : MessageStyle.TEXT_INFO, null, msg);
+            });
             return yield daemon.authenticate(ctx.username, cancellable);
 		}
 
