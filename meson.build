@@ -11,6 +11,7 @@ howdy_bin_path = get_option('howdy_compare')
 cancel_pam_conv_method = get_option('cancel_pam_conv_method')
 enable_howdy = howdy_bin_path != ''
 vapi_dir = meson.current_source_dir() / 'vapi'
+log_tag = 'PamBio'
 
 # compilers
 valac = meson.get_compiler('vala')
@@ -32,7 +33,7 @@ add_project_arguments([
     enable_howdy ? ['-D', 'ENABLE_HOWDY'] : [],
 ], language: 'vala')
 add_project_arguments([
-    '-DG_LOG_DOMAIN="PamBio"',
+    '-DG_LOG_DOMAIN="' + log_tag + '"',
 ], language: 'c')
 
 # targets
@@ -42,6 +43,7 @@ conf = configuration_data()
 conf.set_quoted('HOWDY_COMPARE', howdy_bin_path)
 conf.set('ENABLE_FPRINT', enable_fprint)
 conf.set('CANCEL_PAM_CONV_USE_' + cancel_pam_conv_method.to_upper(), true)
+conf.set_quoted('LOG_TAG', log_tag)
 configure_file(output: 'config.h', configuration: conf)
 config_vala_dep = valac.find_library('config', dirs: vapi_dir)
 

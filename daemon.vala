@@ -33,28 +33,28 @@ namespace PamBio {
 
             switch (priority) {
             case SysLogPriorities.EMERG:
-                GLib.log(null, LogLevelFlags.LEVEL_CRITICAL, m);
+                GLib.log(Build.LOG_TAG, LogLevelFlags.LEVEL_CRITICAL, m);
                 break;
             case SysLogPriorities.ALERT:
-                GLib.log(null, LogLevelFlags.LEVEL_CRITICAL, m);
+                GLib.log(Build.LOG_TAG, LogLevelFlags.LEVEL_CRITICAL, m);
                 break;
             case SysLogPriorities.CRIT:
-                GLib.log(null, LogLevelFlags.LEVEL_CRITICAL, m);
+                GLib.log(Build.LOG_TAG, LogLevelFlags.LEVEL_CRITICAL, m);
                 break;
             case SysLogPriorities.ERR:
-                GLib.log(null, LogLevelFlags.LEVEL_CRITICAL, m);
+                GLib.log(Build.LOG_TAG, LogLevelFlags.LEVEL_CRITICAL, m);
                 break;
             case SysLogPriorities.WARNING:
-                GLib.log(null, LogLevelFlags.LEVEL_WARNING, m);
+                GLib.log(Build.LOG_TAG, LogLevelFlags.LEVEL_WARNING, m);
                 break;
             case SysLogPriorities.NOTICE:
-                GLib.log(null, LogLevelFlags.LEVEL_MESSAGE, m);
+                GLib.log(Build.LOG_TAG, LogLevelFlags.LEVEL_MESSAGE, m);
                 break;
             case SysLogPriorities.INFO:
-                GLib.log(null, LogLevelFlags.LEVEL_INFO, m);
+                GLib.log(Build.LOG_TAG, LogLevelFlags.LEVEL_INFO, m);
                 break;
             case SysLogPriorities.DEBUG:
-                GLib.log(null, LogLevelFlags.LEVEL_DEBUG, m);
+                GLib.log(Build.LOG_TAG, LogLevelFlags.LEVEL_DEBUG, m);
                 break;
             default:
                 critical("Should never reach here");
