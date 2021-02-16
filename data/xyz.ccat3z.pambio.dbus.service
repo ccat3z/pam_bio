@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=xyz.ccat3z.pambio
+Exec=/bin/false
+User=root
+SystemdService=pam_biod.service

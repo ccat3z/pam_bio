@@ -1,0 +1,7 @@
+[Unit]
+Description=PamBio Daemon
+
+[Service]
+Type=dbus
+BusName=xyz.ccat3z.pambio
+ExecStart=@PAM_BIOD_PATH@
