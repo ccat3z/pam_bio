@@ -139,6 +139,10 @@ namespace PamBio {
             );
             assert(!clients.has_key(sender));
 
+            var timeout = new TimeoutSource.seconds(30);
+            timeout.set_callback(() => { cancellable.cancel(); return Source.REMOVE; });
+            timeout.attach();
+
             try {
                 clients[sender] = ctx;
                 while (!auth_mutex.trylock()) {
@@ -156,6 +160,7 @@ namespace PamBio {
                 warning(@"$sender authentication failed: $(e.domain) $(e.message)");
                 throw e;
             } finally {
+                timeout.destroy();
                 clients.unset(sender);
                 var next = pending.poll();
                 if (next != null) Idle.add((owned) next.resume);
